@@ -1,22 +1,19 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import NotificationComposerCard from '@/components/NotificationComposerCard';
-import { ThemeToggle } from '@/components/theme-toggle';
-import FloatingActionButton from '@/components/FloatingActionButton';
-import { useTheme } from '@/hooks/use-theme';
-import PreviewCard from '@/components/PreviewCard';
+import { useTheme } from '@/hooks/use-theme'; // Changed from useThemeContext to useTheme
 import { NotificationComposer } from '@/components/notification-composer';
 import { PreviewDisplay } from '@/components/preview-display';
 import { SchedulerModal } from '@/components/scheduler-modal';
 import type { ComposerFormData, Preset, NotificationChannel, NotificationTone } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 export default function SmartComposerPage() {
-  const { theme } = useTheme(); // Changed from useThemeContext to useTheme
+  const { theme } = useTheme(); 
   const { toast } = useToast();
 
   // State for NotificationComposer
@@ -130,8 +127,6 @@ export default function SmartComposerPage() {
         onConfirmSchedule={handleConfirmSchedule}
       />
       
-      {/* FloatingActionButton can be used for other actions like quick summary or new composition */}
-      {/* <FloatingActionButton /> */}
     </div>
   );
 }

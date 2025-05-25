@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -10,9 +11,10 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Sora', 'Space Grotesk', 'sans-serif'],
-                sora: ['Sora', 'sans-serif'],
-                'space-grotesk': ['Space Grotesk', 'sans-serif'],
+                sans: ['var(--font-geist-sans)', 'Arial', 'Helvetica', 'sans-serif'],
+                mono: ['var(--font-geist-mono)', 'monospace'],
+                sora: ['Sora', 'sans-serif'], // Keep if specifically used
+                'space-grotesk': ['Space Grotesk', 'sans-serif'], // Keep if specifically used
             },
             colors: {
                 background: 'hsl(var(--background))',
