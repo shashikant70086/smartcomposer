@@ -22,7 +22,7 @@ const GenerateNotificationVariantsInputSchema = z.object({
 export type GenerateNotificationVariantsInput = z.infer<typeof GenerateNotificationVariantsInputSchema>;
 
 const GenerateNotificationVariantsOutputSchema = z.object({
-  variants: z.array(z.string()).describe('An array of AI-generated notification variants.'),
+  variants: z.array(z.string()).min(3).max(3).describe('An array of exactly three AI-generated notification variants.'),
 });
 
 export type GenerateNotificationVariantsOutput = z.infer<typeof GenerateNotificationVariantsOutputSchema>;
@@ -35,17 +35,23 @@ const generateNotificationVariantsPrompt = ai.definePrompt({
   name: 'generateNotificationVariantsPrompt',
   input: {schema: GenerateNotificationVariantsInputSchema},
   output: {schema: GenerateNotificationVariantsOutputSchema},
-  prompt: `You are an AI assistant specializing in generating notification variants.
+  prompt: `You are an AI assistant specializing in crafting compelling notification messages.
 
-  Based on the user's base message and selected tone, generate three different notification variants.
+Your task is to generate exactly three distinct notification variants based on the provided base message and desired tone.
+Each variant should be a complete, ready-to-use notification message.
 
-  Base Message: {{{baseMessage}}}
-  Tone: {{{tone}}}
+Base Message: {{{baseMessage}}}
+Tone: {{{tone}}}
 
-  Variants:
-  {{#each variants}}
-  - {{{this}}}
-  {{/each}}`,
+Ensure your output is a JSON object containing a key "variants" which holds an array of these three notification strings. For example:
+{
+  "variants": [
+    "First notification variant text...",
+    "Second notification variant text...",
+    "Third notification variant text..."
+  ]
+}
+`,
 });
 
 const generateNotificationVariantsFlow = ai.defineFlow(
@@ -55,10 +61,20 @@ const generateNotificationVariantsFlow = ai.defineFlow(
     outputSchema: GenerateNotificationVariantsOutputSchema,
   },
   async input => {
-    const {output} = await generateNotificationVariantsPrompt({
-      ...input,
-      variants: [], // Initialize variants array (handlebars each block needs a list to iterate over.)
-    });
-    return output!;
+    const {output} = await generateNotificationVariantsPrompt(input);
+    if (!output || !output.variants || output.variants.length !== 3) {
+        // Fallback or error handling if the LLM doesn't return exactly 3 variants
+        // For now, we'll attempt to provide some sensible defaults or log an error
+        console.error("AI did not return the expected 3 variants. Input:", input, "Output:", output);
+        // You could try to generate some generic variants or return an error
+        // For simplicity, returning a placeholder if generation fails to meet criteria strictly.
+        // A more robust solution might involve retries or more sophisticated error handling.
+        return { variants: [
+            `Notification regarding: ${input.baseMessage.substring(0,30)}... (Tone: ${input.tone}) - Variant 1`,
+            `Notification regarding: ${input.baseMessage.substring(0,30)}... (Tone: ${input.tone}) - Variant 2`,
+            `Notification regarding: ${input.baseMessage.substring(0,30)}... (Tone: ${input.tone}) - Variant 3`,
+        ]};
+    }
+    return output;
   }
 );
