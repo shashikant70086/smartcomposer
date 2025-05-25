@@ -1,116 +1,89 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { NotificationComposer } from '@/components/notification-composer';
-import { PreviewDisplay } from '@/components/preview-display';
-import { SchedulerModal } from '@/components/scheduler-modal';
-import { ThemeToggle } from '@/components/theme-toggle';
-import type { ComposerFormData, Preset, NotificationChannel, NotificationTone } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import NotificationComposerCard from '@/components/NotificationComposerCard';
+import ThemeToggle from '@/components/theme-toggle';
+import FloatingActionButton from '@/components/FloatingActionButton';
+import { useTheme } from '@/hooks/use-theme';
+import PreviewCard from '@/components/PreviewCard';
+
+type NotificationTone = 'casual' | 'friendly' | 'formal' | 'urgent';
+type NotificationChannel = 'Email' | 'SMS' | 'Push';
 
 export default function SmartComposerPage() {
-  const { toast } = useToast();
-  const [generatedVariants, setGeneratedVariants] = useState<string[]>([]);
-  const [composerTone, setComposerTone] = useState<NotificationTone | null>(null);
-  const [composerChannels, setComposerChannels] = useState<ComposerFormData['channels'] | null>(null);
-  
-  const [presets, setPresets] = useState<Preset[]>([]);
+  const { theme } = useTheme();
+  const [prompt, setPrompt] = useState('');
+  const [tone, setTone] = useState<NotificationTone | null>(null);
+  const [channel, setChannel] = useState<NotificationChannel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
-  const [selectedVariantForScheduling, setSelectedVariantForScheduling] = useState<string | null>(null);
-  const [selectedChannelForScheduling, setSelectedChannelForScheduling] = useState<NotificationChannel | null>(null);
-
-  // Load presets from localStorage on initial render
-  useEffect(() => {
-    const storedPresets = localStorage.getItem('smartComposerPresets');
-    if (storedPresets) {
-      setPresets(JSON.parse(storedPresets));
-    }
-  }, []);
-
   // Save presets to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('smartComposerPresets', JSON.stringify(presets));
-  }, [presets]);
+  // useEffect(() => {
+  //   localStorage.setItem('smartComposerPresets', JSON.stringify(presets));
+  // }, [presets]);
 
-  const handleGenerateNotifications = (variants: string[], tone: NotificationTone, channels: ComposerFormData['channels']) => {
-    setGeneratedVariants(variants);
-    setComposerTone(tone);
-    setComposerChannels(channels);
-  };
+  const [messages, setMessages] = useState<string[]>([]);
 
-  const handleSavePreset = (name: string, data: ComposerFormData) => {
-    const newPreset: Preset = { ...data, id: Date.now().toString(), name };
-    setPresets(prevPresets => [...prevPresets, newPreset]);
-  };
-
-  const handleLoadPreset = (presetId: string) => {
-    // The NotificationComposer component handles resetting form values.
-    // This function can be used for any additional logic if needed when a preset is loaded.
-    console.log("Preset loaded in parent:", presetId);
-  };
-
-  const handleScheduleRequest = (variantContent: string, channel: NotificationChannel) => {
-    setSelectedVariantForScheduling(variantContent);
-    setSelectedChannelForScheduling(channel);
-    setIsSchedulerOpen(true);
-  };
-
-  const handleConfirmSchedule = (dateTime: Date, content: string, channel: NotificationChannel) => {
-    // In a real app, this would interact with a backend to schedule the notification.
-    // For now, just show a toast.
-    toast({
-      title: "Notification Scheduled!",
-      description: `Your ${channel} notification "${content.substring(0,30)}..." is scheduled for ${format(dateTime, "PPPp")}.`,
-    });
-    console.log("Scheduled:", { dateTime, content, channel });
-    setIsSchedulerOpen(false);
-    setSelectedVariantForScheduling(null);
-    setSelectedChannelForScheduling(null);
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    setMessages([]); // Clear previous messages
+    try {
+      // Replace with your actual Genkit flow invocation
+      // This is a placeholder using fetch, adjust based on your genkit setup
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt, tone, channel }),
+      });
+      const data = await response.json();
+      setMessages(data.variants || []); // Assuming the API returns { variants: string[] }
+    } catch (error) {
+      console.error('Error generating notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-background text-foreground p-4 md:p-8 selection:bg-primary/20 selection:text-primary">
-      <header className="w-full max-w-4xl mb-8 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="h-8 w-8 text-primary" />
-          <h1 className="text-4xl font-bold text-primary">SmartCompose</h1>
-        </div>
+    <div className={`flex flex-col items-center min-h-screen p-4 md:p-8 ${theme === 'dark' ? 'dark' : ''} bg-background text-foreground selection:bg-primary/20 selection:text-primary`}>
+      <header className="w-full max-w-4xl mb-8 flex justify-end items-center">
         <ThemeToggle />
       </header>
 
       <main className="w-full max-w-4xl space-y-8">
         <NotificationComposer
-          onGenerate={handleGenerateNotifications}
-          onSavePreset={handleSavePreset}
-          presets={presets}
-          onLoadPreset={handleLoadPreset}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-        />
-        <PreviewDisplay
-          variants={generatedVariants}
-          tone={composerTone}
-          channels={composerChannels}
-          onScheduleRequest={handleScheduleRequest}
+          prompt={prompt}
+          setPrompt={setPrompt}
+          tone={tone}
+          setTone={setTone}
+          channel={channel}
+          setChannel={setChannel}
+          onGenerate={handleGenerate} // Pass the handleGenerate function
           isLoading={isLoading}
         />
+
+        {/* Render Preview Cards in a grid */}
+        <AnimatePresence>
+          {messages.length > 0 && (
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+            {messages.map((msg, index) => (
+              <PreviewCard key={index} message={msg} />
+            ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
-      <SchedulerModal
-        isOpen={isSchedulerOpen}
-        onOpenChange={setIsSchedulerOpen}
-        notificationContent={selectedVariantForScheduling}
-        notificationChannel={selectedChannelForScheduling}
-        onConfirmSchedule={handleConfirmSchedule}
-      />
-      
-      <footer className="w-full max-w-4xl mt-12 text-center text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} SmartCompose. AI-Powered Notifications.</p>
-      </footer>
+      {/* Placeholder for FAB */}
+      <FloatingActionButton />
     </div>
   );
 }
